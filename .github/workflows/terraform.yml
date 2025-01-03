@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: us-east-1  # Change this to your desired region
+  AWS_REGION: us-north-1  # Change this to your desired region
 
 permissions:
   contents: read
