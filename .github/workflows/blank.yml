@@ -1,0 +1,66 @@
+# .github/workflows/terraform-aws.yml
+name: Terraform AWS Deployment
+
+on:
+  workflow_call:
+    inputs:
+      aws_access_key_id:
+        required: true
+        type: string
+      aws_secret_access_key:
+        required: true
+        type: string
+      region:
+        required: true
+        type: string
+      terraform_version:
+        required: true
+        type: string
+      terraform_dir:
+        required: false
+        default: '.'
+        type: string
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository to get the Terraform code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up Terraform CLI
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      # Configure AWS credentials using the provided inputs
+      - name: Configure AWS Credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+          AWS_REGION: ${{ inputs.region }}
+        run: |
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id=${AWS_ACCESS_KEY_ID}" >> ~/.aws/credentials
+          echo "aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}" >> ~/.aws/credentials
+          echo "[default]" > ~/.aws/config
+          echo "region=${AWS_REGION}" >> ~/.aws/config
+
+      # Initialize Terraform configuration
+      - name: Terraform Init
+        run: terraform -chdir=${{ inputs.terraform_dir }} init
+
+      # Validate Terraform configuration
+      - name: Terraform Validate
+        run: terraform -chdir=${{ inputs.terraform_dir }} validate
+
+      # Terraform Plan (dry run) to show what changes will be made
+      - name: Terraform Plan
+        run: terraform -chdir=${{ inputs.terraform_dir }} plan
+
+      # Terraform Apply (apply the changes to AWS)
+      - name: Terraform Apply
+        run: terraform -chdir=${{ inputs.terraform_dir }} apply -auto-approve
